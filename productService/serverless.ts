@@ -3,7 +3,7 @@ import type { AWS } from '@serverless/typescript';
 const serverlessConfiguration: AWS = {
   service: 'productservice',
   frameworkVersion: '3',
-  plugins: ['serverless-esbuild'],
+  plugins: ['serverless-auto-swagger', 'serverless-esbuild', 'serverless-offline'],
   provider: {
     name: 'aws',
     runtime: 'nodejs14.x',
@@ -18,14 +18,44 @@ const serverlessConfiguration: AWS = {
       handler: 'src/functions/getProductList/handler.getProductList',
       description: 'Retrieves list of available products',
       events: [
-        { httpApi: 'GET /products' }
+        {
+          httpApi: {
+            method: 'GET',
+            path: '/products',
+            // @ts-expect-error types for serverless-auto-swagger don't exist
+            responseData: {
+              200: {
+                description: 'Returns the list of available products.',
+                bodyType: 'ProductList',
+              },
+            }
+          }
+        }
       ]
     },
     getProductById: {
       handler: 'src/functions/getProductById/handler.getProductById',
-      description: 'Retrieves product by provided product ID',
+      description: 'Retrieves product with provided productId',
       events: [
-        { httpApi: 'GET /products/{productId}' }
+        {
+          httpApi: {
+            method: 'GET',
+            path: '/products/{productId}',
+            // @ts-expect-error types for serverless-auto-swagger don't exist
+            responseData: {
+              200: {
+                description: 'Returns product with provided productId.',
+                bodyType: 'Product',
+              },
+              400: {
+                description: `Returned when provided productId have wrong format (UUID format is expected).`,
+              },
+              404: {
+                description: `Returned when product with provided productId is not found.`,
+              },
+            }
+          }
+        }
       ]
     },
   },
@@ -40,6 +70,14 @@ const serverlessConfiguration: AWS = {
       platform: 'node',
       concurrency: 10,
     },
+    autoswagger: {
+      title: 'Product service API',
+      apiType: 'httpApi',
+      generateSwaggerOnDeploy: true,
+      typefiles: ['./src/types/product.ts'],
+      basePath: '',
+      schemes: ['https', 'http'],
+    }
   },
 };
 

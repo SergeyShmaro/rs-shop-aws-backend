@@ -4,3 +4,5 @@ export interface Product {
   price: number;
   description: string;
 }
+
+export type ProductList = Product[];
