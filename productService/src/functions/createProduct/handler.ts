@@ -7,8 +7,8 @@ import { ProductWithStock } from 'src/types/apiTypes';
 const isProvidedProductDataValid = (productData: any): productData is Omit<ProductWithStock, 'id'> => {
   if (typeof productData !== 'object') return false;
   if (typeof productData.title !== 'string') return false;
-  if (typeof productData.price !== 'number') return false;
-  if (typeof productData.count !== 'number') return false;
+  if (typeof productData.price !== 'number' || productData.price <= 0) return false;
+  if (typeof productData.count !== 'number' || productData.count <= 0) return false;
   if (productData.description !== undefined && typeof productData.description !== 'string') return false;
   if (productData.imageSrc !== undefined && typeof productData.imageSrc !== 'string') return false;
   return true;
