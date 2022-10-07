@@ -6,12 +6,18 @@
   "scripts": {
     "deploy": "sls deploy",
     "test": "jest",
-    "deploy:offline": "serverless offline start"
+    "deploy:offline": "serverless offline start",
+    "fillProductsTable": "ts-node ./src/dbPatches/DynamoDB/fillDBWithProducts.ts",
+    "fillStocksTable": "ts-node ./src/dbPatches/DynamoDB/fillDBWithStocks.ts"
   },
   "engines": {
     "node": ">=14.15.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.180.0",
+    "@aws-sdk/lib-dynamodb": "^3.181.0",
+    "uuid": "^9.0.0"
+  },
   "devDependencies": {
     "@babel/core": "^7.19.1",
     "@babel/preset-env": "^7.19.1",
@@ -20,6 +26,7 @@
     "@types/aws-lambda": "^8.10.71",
     "@types/jest": "^29.0.3",
     "@types/node": "^14.14.25",
+    "@types/uuid": "^8.3.4",
     "babel-jest": "^29.0.3",
     "esbuild": "^0.14.11",
     "jest": "^29.0.3",

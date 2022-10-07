@@ -2,7 +2,6 @@ export interface Product {
   id: string;
   title: string;
   price: number;
-  description: string;
+  imageSrc?: string;
+  description?: string;
 }
-
-export type ProductList = Product[];
