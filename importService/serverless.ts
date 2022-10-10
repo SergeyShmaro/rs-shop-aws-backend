@@ -5,10 +5,14 @@ const serverlessConfiguration: AWS = {
   service: 'importservice',
   frameworkVersion: '3',
   plugins: ['serverless-esbuild'],
+  useDotenv: true,
   provider: {
     name: 'aws',
     runtime: 'nodejs14.x',
     region: 'eu-west-1',
+    environment: {
+      SQS_URL: '${env:SQS_URL}',
+    },
     iam: {
       role: {
         statements: [
@@ -16,6 +20,11 @@ const serverlessConfiguration: AWS = {
             Effect: 'Allow',
             Action: ['s3:*'],
             Resource: "arn:aws:s3:::e-shop-rs-import/*"
+          },
+          {
+            Effect: 'Allow',
+            Action: ['sqs:*'],
+            Resource: '${env:SQS_ARN}'
           }
         ],
       },
