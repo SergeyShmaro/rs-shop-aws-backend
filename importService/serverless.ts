@@ -29,13 +29,25 @@ const serverlessConfiguration: AWS = {
         ],
       },
     },
-    httpApi: { cors: true, shouldStartNameWithService: true },
+    httpApi: {
+      cors: true,
+      shouldStartNameWithService: true,
+      authorizers: {
+        basicImportAuthorizer: {
+          payloadVersion: '2.0',
+          functionArn: '${env:BASIC_AUTHORIZER_ARN}',
+          type: 'request',
+          identitySource: ['$request.header.Authorization'],
+          resultTtlInSeconds: 0,
+        }
+      }
+    },
   },
   functions: {
     importProductsFile: {
       handler: 'src/functions/importProductsFile/handler.importProductsFile',
       description: 'Saves .csv file into s3 bucket',
-      events: [{ httpApi: { method: 'GET', path: '/import' } }],
+      events: [{ httpApi: { method: 'GET', path: '/import', authorizer: 'basicImportAuthorizer' } }],
     },
     importFileParser: {
       handler: 'src/functions/importFileParser/handler.importFileParser',
