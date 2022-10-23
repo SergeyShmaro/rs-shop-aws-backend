@@ -5,11 +5,16 @@ const serverlessConfiguration: AWS = {
   service: 'productservice',
   frameworkVersion: '3',
   plugins: ['serverless-auto-swagger', 'serverless-esbuild', 'serverless-offline'],
+  useDotenv: true,
   provider: {
     name: 'aws',
     runtime: 'nodejs14.x',
     region: 'eu-west-1',
-    environment: { PRODUCTS_TABLE, STOCKS_TABLE },
+    environment: {
+      PRODUCTS_TABLE,
+      STOCKS_TABLE,
+      CREATE_PRODUCT_TOPIC_ARN: { Ref: 'createProductTopic' },
+    },
     iam: {
       role: {
         statements: [
@@ -22,7 +27,12 @@ const serverlessConfiguration: AWS = {
               'dynamodb:PutItem',
             ],
             Resource: "*"
-          }
+          },
+          {
+            Effect: 'Allow',
+            Action: ['sns:*'],
+            Resource: { Ref: 'createProductTopic' }
+          },
         ],
       },
     },
@@ -87,6 +97,20 @@ const serverlessConfiguration: AWS = {
         }
       ]
     },
+    catalogBatchProcess: {
+      handler: 'src/functions/catalogBatchProcess/handler.catalogBatchProcess',
+      description: 'Creates products imported from csv file',
+      events: [
+        {
+          sqs: {
+            arn: {
+              "Fn::GetAtt": ['catalogItemsQueue', 'Arn'],
+            },
+            batchSize: 5,
+          }
+        }
+      ]
+    },
   },
   resources: {
     Resources: {
@@ -107,7 +131,31 @@ const serverlessConfiguration: AWS = {
           ProvisionedThroughput: { ReadCapacityUnits: 1, WriteCapacityUnits: 1 },
           TableName: STOCKS_TABLE,
         }
-      }
+      },
+      catalogItemsQueue: {
+        Type: 'AWS::SQS::Queue',
+        Properties: {
+          QueueName: "catalogItemsQueue"
+        }
+      },
+      createProductTopic: {
+        Type: 'AWS::SNS::Topic',
+        Properties: {
+          TopicName: 'createProductTopic',
+          Subscription: [
+            { Protocol: 'email', Endpoint: '${env:CREATE_PRODUCT_EMAIL}' }
+          ],
+        }
+      },
+      expensiveProductsImportSub: {
+        Type: 'AWS::SNS::Subscription',
+        Properties: {
+          TopicArn: { Ref: 'createProductTopic' },
+          Endpoint: '${env:EXPENSIVE_PRODUCT_EMAIL}',
+          FilterPolicy: { price: [{ "numeric": [">=", 50] }] },
+          Protocol: 'email',
+        }
+      },
     }
   },
   custom: {

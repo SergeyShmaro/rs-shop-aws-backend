@@ -1,0 +1,40 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`catalogBatchProcess should create send error message to SNS service 1`] = `
+{
+  "Message": "
+          Products failed to import: [{"title":"testTitle1","price":1,"count":1},{"title":"testTitle2","price":2,"count":2}];
+          Products with wrong field values: [{"title":"testTitle3","price":-3,"count":3}];
+        ",
+  "Subject": "Products which was not imported",
+  "TopicArn": undefined,
+}
+`;
+
+exports[`catalogBatchProcess should create send messages to SNS service 1`] = `
+{
+  "Message": "Imported product data: {"title":"testTitle1","price":1,"count":1};",
+  "MessageAttributes": {
+    "price": {
+      "DataType": "Number",
+      "StringValue": "1",
+    },
+  },
+  "Subject": "Product import",
+  "TopicArn": undefined,
+}
+`;
+
+exports[`catalogBatchProcess should create send messages to SNS service 2`] = `
+{
+  "Message": "Imported product data: {"title":"testTitle2","price":2,"count":2};",
+  "MessageAttributes": {
+    "price": {
+      "DataType": "Number",
+      "StringValue": "2",
+    },
+  },
+  "Subject": "Product import",
+  "TopicArn": undefined,
+}
+`;

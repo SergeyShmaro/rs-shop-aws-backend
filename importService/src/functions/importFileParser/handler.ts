@@ -1,6 +1,7 @@
 import type { S3Handler } from 'aws-lambda';
 import csv from 'csv-parser';
 import type { GetObjectCommandOutput } from '@aws-sdk/client-s3';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { S3Client, GetObjectCommand, CopyObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { BUCKET_NAME, REGION } from 'src/constants/environment';
 
@@ -11,12 +12,37 @@ const getFileName = (key: string) => {
   return fileNameWithExtension;
 };
 
-const getProductsData = (getObjectResponse: GetObjectCommandOutput) => {
+const sendDataToQueue = (sqsClient: SQSClient, data: any) => {
+  if (typeof data !== 'object') return;
+  if (typeof data.title !== 'string') return;
+  if (data.imageSrc !== undefined && typeof data.imageSrc !== 'string') return false;
+  if (data.description !== undefined && typeof data.description !== 'string') return false;
+  const price = typeof data.price === 'string' ? parseFloat(data.price) : data.price;
+  if (typeof price !== 'number' || price <= 0) return;
+  const count = typeof data.count === 'string' ? parseInt(data.count) : data.count;
+  if (typeof count !== 'number' || count <= 0) return;
+
+  sqsClient.send(new SendMessageCommand({
+    QueueUrl: process.env.SQS_URL,
+    MessageBody: JSON.stringify({
+      price,
+      count,
+      title: data.title,
+      imageSrc: data.imageSrc,
+      description: data.description,
+    }),
+  }));
+
+};
+
+const processProductsData = (getObjectResponse: GetObjectCommandOutput): Promise<unknown[]> => {
+  const sqsClient = new SQSClient({ region: 'eu-west-1' });
+
   return new Promise((resolve) => {
     const results = [];
     getObjectResponse.Body
-      ?.pipe(csv({ separator: '\t' }))
-      ?.on('data', (data) => results.push(data))
+      ?.pipe(csv({ separator: ';' }))
+      ?.on('data', (data) => { sendDataToQueue(sqsClient, data); })
       ?.on('end', () => { resolve(results) });
   });
 }
@@ -33,8 +59,7 @@ export const importFileParser: S3Handler = async (event) => {
       Key: createdObjectKey,
     }));
 
-    const productsData = await getProductsData(getObjectResponse);
-    console.log('productsData', productsData);
+    await processProductsData(getObjectResponse);
 
     const fileName = getFileName(createdObjectKey);
     if (!fileName) return;
