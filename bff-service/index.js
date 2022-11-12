@@ -21,7 +21,7 @@ app.all('/*', async (req, res) => {
     const { host, ...headersWithoutHost } = headers;
     const response = await fetch(`${targetEndpoint}${originalUrl}`, {
       method,
-      ...(body ? { body: JSON.stringify(body) } : {}),
+      ...(Object.keys(body).length !== 0 ? { body: JSON.stringify(body) } : {}),
       headers: headersWithoutHost,
     });
 
