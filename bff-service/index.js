@@ -6,6 +6,15 @@ const port = process.env.PORT || 3000;
 
 app.use(express.json());
 
+let productsCache = {};
+
+const cacheResponse = (status, data) => {
+  productsCache = { status, data };
+  setTimeout(() => {
+    productsCache = {};
+  }, 120000);
+}
+
 app.all('/*', async (req, res) => {
   const { method, path, originalUrl, body, headers } = req;
   const destination = path.split('/')[1];
@@ -13,6 +22,13 @@ app.all('/*', async (req, res) => {
 
   if (!targetEndpoint) {
     res.status(502).send({ message: 'Cannot process the request' });
+    return;
+  }
+
+  const shouldUseCache = path === '/products' && method.toUpperCase() === 'GET';
+
+  if (shouldUseCache && productsCache.data) {
+    res.status(productsCache.status).send(productsCache.data);
     return;
   }
 
@@ -33,6 +49,8 @@ app.all('/*', async (req, res) => {
     } catch (error) {
       console.log('Data is not in JSON format');
     }
+
+    if (shouldUseCache) cacheResponse(response.status, parsedData);
 
     res.status(response.status).send(parsedData);
   } catch (error) {
